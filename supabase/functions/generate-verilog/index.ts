@@ -44,6 +44,9 @@ serve(async (req) => {
       ? `// Generate a Verilog module for: ${prompt}\nmodule`
       : `-- Generate a VHDL entity for: ${prompt}\nlibrary IEEE;\nuse IEEE.STD_LOGIC_1164.ALL;\n\nentity`
 
+    console.log('Formatted prompt:', formattedPrompt)
+    console.log('Using token (first 10 chars):', HUGGING_FACE_TOKEN.substring(0, 10) + '...')
+
     // Call Hugging Face API for the fine-tuned Verilog model
     const response = await fetch(
       "https://api-inference.huggingface.co/models/shailja/fine-tuned-codegen-6B-Verilog",
@@ -66,11 +69,29 @@ serve(async (req) => {
       }
     )
 
+    console.log('Hugging Face API response status:', response.status)
+
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Hugging Face API error:', errorText)
+      
+      // Parse the error to provide better user feedback
+      let userFriendlyError = 'Failed to generate code'
+      try {
+        const errorJson = JSON.parse(errorText)
+        if (errorJson.error && errorJson.error.includes('permissions')) {
+          userFriendlyError = 'Your Hugging Face token does not have sufficient permissions for Inference API. Please ensure your token has "Make calls to the serverless Inference API" permission enabled.'
+        } else if (errorJson.error && errorJson.error.includes('authentication')) {
+          userFriendlyError = 'Invalid Hugging Face token. Please check your token and try again.'
+        } else if (errorJson.error) {
+          userFriendlyError = errorJson.error
+        }
+      } catch (e) {
+        console.error('Could not parse error response:', e)
+      }
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to generate code', details: errorText }),
+        JSON.stringify({ error: userFriendlyError, details: errorText }),
         { 
           status: response.status, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
