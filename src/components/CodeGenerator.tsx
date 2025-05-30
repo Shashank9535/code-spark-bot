@@ -1,61 +1,53 @@
 
 import React, { useState } from 'react';
-import { Send, Copy, Download, Sparkles, Code2, FileText } from 'lucide-react';
+import { Send, Copy, Download, Sparkles, Code2, FileText, AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const CodeGenerator = () => {
   const [prompt, setPrompt] = useState('');
   const [generatedCode, setGeneratedCode] = useState('');
   const [language, setLanguage] = useState('verilog');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState('');
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     
     setIsGenerating(true);
+    setError('');
     
-    // Simulate API call
-    setTimeout(() => {
-      const sampleVerilog = `module ${prompt.toLowerCase().replace(/\s+/g, '_')} (
-    input clk,
-    input reset,
-    input [3:0] data_in,
-    output reg [3:0] data_out
-);
+    try {
+      console.log('Calling generate-verilog function with:', { prompt, language });
+      
+      const { data, error: functionError } = await supabase.functions.invoke('generate-verilog', {
+        body: { prompt, language }
+      });
 
-always @(posedge clk or posedge reset) begin
-    if (reset)
-        data_out <= 4'b0000;
-    else
-        data_out <= data_in;
-end
+      if (functionError) {
+        console.error('Function error:', functionError);
+        setError(`Failed to generate code: ${functionError.message}`);
+        return;
+      }
 
-endmodule`;
+      if (data?.error) {
+        console.error('API error:', data.error);
+        setError(data.error);
+        return;
+      }
 
-      const sampleVHDL = `library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
+      if (data?.generatedCode) {
+        setGeneratedCode(data.generatedCode);
+        console.log('Generated code successfully');
+      } else {
+        setError('No code was generated. Please try a different prompt.');
+      }
 
-entity ${prompt.toLowerCase().replace(/\s+/g, '_')} is
-    Port ( clk : in STD_LOGIC;
-           reset : in STD_LOGIC;
-           data_in : in STD_LOGIC_VECTOR (3 downto 0);
-           data_out : out STD_LOGIC_VECTOR (3 downto 0));
-end ${prompt.toLowerCase().replace(/\s+/g, '_')};
-
-architecture Behavioral of ${prompt.toLowerCase().replace(/\s+/g, '_')} is
-begin
-    process(clk, reset)
-    begin
-        if reset = '1' then
-            data_out <= "0000";
-        elsif rising_edge(clk) then
-            data_out <= data_in;
-        end if;
-    end process;
-end Behavioral;`;
-
-      setGeneratedCode(language === 'verilog' ? sampleVerilog : sampleVHDL);
+    } catch (err) {
+      console.error('Error generating code:', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   const copyToClipboard = () => {
@@ -78,8 +70,11 @@ end Behavioral;`;
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-6 mb-8 border border-gray-700">
         <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
           <Sparkles className="h-6 w-6 text-blue-400 mr-2" />
-          Generate Your Code
+          AI-Powered Verilog Generation
         </h2>
+        <p className="text-gray-300 mb-4 text-sm">
+          Powered by fine-tuned CodeGen model specialized for Verilog
+        </p>
         
         <div className="space-y-4">
           {/* Language Selection */}
@@ -129,6 +124,17 @@ end Behavioral;`;
               <span>{isGenerating ? 'Generating...' : 'Generate'}</span>
             </button>
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 flex items-start space-x-2">
+              <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
+              <div className="text-red-300">
+                <p className="font-medium">Error</p>
+                <p className="text-sm">{error}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -139,7 +145,10 @@ end Behavioral;`;
             <div className="flex items-center space-x-2">
               <Code2 className="h-5 w-5 text-blue-400" />
               <span className="text-white font-medium">
-                Generated {language.toUpperCase()} Code
+                AI-Generated {language.toUpperCase()} Code
+              </span>
+              <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded">
+                CodeGen-6B-Verilog
               </span>
             </div>
             <div className="flex items-center space-x-2">
@@ -175,11 +184,11 @@ end Behavioral;`;
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            'JK Flip-Flop',
-            '4-bit Binary Counter',
-            '8-bit Full Adder',
-            '4:1 Multiplexer',
-            'D Flip-Flop with Reset',
+            'JK Flip-Flop with preset and clear',
+            '4-bit Binary Counter with enable',
+            '8-bit Full Adder with carry',
+            '4:1 Multiplexer with select',
+            'D Flip-Flop with async reset',
             '4-bit Shift Register'
           ].map((example) => (
             <button
