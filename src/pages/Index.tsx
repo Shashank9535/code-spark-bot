@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { ArrowRight, Cpu, Zap, BookOpen, Code, Circuit } from 'lucide-react';
+import { ArrowRight, Cpu, Zap, BookOpen, Code } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import ModuleCard from '../components/ModuleCard';
@@ -11,32 +10,32 @@ const Index = () => {
     {
       title: 'JK Flip-Flop',
       description: 'Generate JK flip-flop with preset and clear functionality',
-      icon: <Circuit className="h-6 w-6 text-blue-400" />
+      icon: <Cpu className="h-6 w-6 text-blue-400" />
     },
     {
       title: '4-bit Counter',
       description: 'Binary counter with synchronous reset and enable',
-      icon: <Circuit className="h-6 w-6 text-blue-400" />
+      icon: <Cpu className="h-6 w-6 text-blue-400" />
     },
     {
       title: '8-bit Adder',
       description: 'Full adder with carry chain for 8-bit arithmetic',
-      icon: <Circuit className="h-6 w-6 text-blue-400" />
+      icon: <Cpu className="h-6 w-6 text-blue-400" />
     },
     {
       title: '4:1 Multiplexer',
       description: 'Four-to-one multiplexer with select inputs',
-      icon: <Circuit className="h-6 w-6 text-blue-400" />
+      icon: <Cpu className="h-6 w-6 text-blue-400" />
     },
     {
       title: 'D Flip-Flop',
       description: 'Data flip-flop with clock enable and reset',
-      icon: <Circuit className="h-6 w-6 text-blue-400" />
+      icon: <Cpu className="h-6 w-6 text-blue-400" />
     },
     {
       title: '4-bit ALU',
       description: 'Arithmetic Logic Unit with multiple operations',
-      icon: <Circuit className="h-6 w-6 text-blue-400" />
+      icon: <Cpu className="h-6 w-6 text-blue-400" />
     }
   ];
 
