@@ -70,10 +70,10 @@ const CodeGenerator = () => {
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-6 mb-8 border border-gray-700">
         <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
           <Sparkles className="h-6 w-6 text-blue-400 mr-2" />
-          AI-Powered Verilog Generation
+          Professional Verilog Generator
         </h2>
         <p className="text-gray-300 mb-4 text-sm">
-          Powered by fine-tuned CodeGen model specialized for Verilog
+          Generate professional-grade Verilog and VHDL code with built-in templates
         </p>
         
         <div className="space-y-4">
@@ -107,7 +107,7 @@ const CodeGenerator = () => {
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g., 4-bit counter, JK flip-flop, 8-bit adder..."
+              placeholder="e.g., JK flip-flop, 4-bit counter, 8-bit adder..."
               className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
               onKeyPress={(e) => e.key === 'Enter' && handleGenerate()}
             />
@@ -145,10 +145,10 @@ const CodeGenerator = () => {
             <div className="flex items-center space-x-2">
               <Code2 className="h-5 w-5 text-blue-400" />
               <span className="text-white font-medium">
-                AI-Generated {language.toUpperCase()} Code
+                Generated {language.toUpperCase()} Code
               </span>
               <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded">
-                CodeGen-6B-Verilog
+                Local Generator
               </span>
             </div>
             <div className="flex items-center space-x-2">
@@ -180,7 +180,7 @@ const CodeGenerator = () => {
       <div className="mt-8">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
           <FileText className="h-5 w-5 text-blue-400 mr-2" />
-          Example Prompts
+          Popular Modules
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
@@ -189,7 +189,7 @@ const CodeGenerator = () => {
             '8-bit Full Adder with carry',
             '4:1 Multiplexer with select',
             'D Flip-Flop with async reset',
-            '4-bit Shift Register'
+            '4-bit ALU'
           ].map((example) => (
             <button
               key={example}
