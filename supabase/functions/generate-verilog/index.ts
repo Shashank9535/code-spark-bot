@@ -1,4 +1,4 @@
-
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -35,11 +35,19 @@ serve(async (req) => {
     if (language === 'verilog') {
       if (promptLower.includes('jk flip') || promptLower.includes('jk-flip')) {
         generatedCode = generateJKFlipFlop()
+      } else if (promptLower.includes('t flip') || promptLower.includes('t-flip')) {
+        generatedCode = generateTFlipFlop()
       } else if (promptLower.includes('4-bit counter') || promptLower.includes('counter')) {
         generatedCode = generate4BitCounter()
+      } else if (promptLower.includes('1-bit') && promptLower.includes('adder')) {
+        generatedCode = generate1BitFullAdder()
+      } else if (promptLower.includes('4-bit') && promptLower.includes('adder')) {
+        generatedCode = generate4BitAdder()
       } else if (promptLower.includes('8-bit adder') || promptLower.includes('adder')) {
         generatedCode = generate8BitAdder()
-      } else if (promptLower.includes('multiplexer') || promptLower.includes('mux')) {
+      } else if (promptLower.includes('2:1') || promptLower.includes('2 to 1') || promptLower.includes('2-to-1')) {
+        generatedCode = generate2to1Multiplexer()
+      } else if (promptLower.includes('4:1') || promptLower.includes('multiplexer') || promptLower.includes('mux')) {
         generatedCode = generate4to1Multiplexer()
       } else if (promptLower.includes('d flip') || promptLower.includes('d-flip')) {
         generatedCode = generateDFlipFlop()
@@ -110,6 +118,138 @@ function generateJKFlipFlop() {
 
 endmodule`
 }
+
+function generateTFlipFlop() {
+  return `module t_flip_flop (
+    input wire clk,
+    input wire reset,
+    input wire t,
+    output reg q,
+    output wire q_bar
+);
+
+    assign q_bar = ~q;
+
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            q <= 1'b0;
+        else if (t)
+            q <= ~q;  // Toggle when T is high
+    end
+
+endmodule`
+}
+
+function generate1BitFullAdder() {
+  return `module full_adder_1bit (
+    input wire a,
+    input wire b,
+    input wire cin,
+    output wire sum,
+    output wire cout
+);
+
+    // Sum = A XOR B XOR Cin
+    assign sum = a ^ b ^ cin;
+    
+    // Carry = (A AND B) OR (Cin AND (A XOR B))
+    assign cout = (a & b) | (cin & (a ^ b));
+
+endmodule
+
+// Testbench for 1-bit Full Adder
+module full_adder_1bit_tb;
+    reg a, b, cin;
+    wire sum, cout;
+    
+    full_adder_1bit uut (
+        .a(a),
+        .b(b),
+        .cin(cin),
+        .sum(sum),
+        .cout(cout)
+    );
+    
+    initial begin
+        // Test all possible input combinations
+        {a, b, cin} = 3'b000; #10;
+        {a, b, cin} = 3'b001; #10;
+        {a, b, cin} = 3'b010; #10;
+        {a, b, cin} = 3'b011; #10;
+        {a, b, cin} = 3'b100; #10;
+        {a, b, cin} = 3'b101; #10;
+        {a, b, cin} = 3'b110; #10;
+        {a, b, cin} = 3'b111; #10;
+        $finish;
+    end
+endmodule`
+}
+
+function generate4BitAdder() {
+  return `module adder_4bit (
+    input wire [3:0] a,
+    input wire [3:0] b,
+    input wire cin,
+    output wire [3:0] sum,
+    output wire cout
+);
+
+    wire [3:0] carry;
+
+    full_adder fa0 (.a(a[0]), .b(b[0]), .cin(cin), .sum(sum[0]), .cout(carry[0]));
+    full_adder fa1 (.a(a[1]), .b(b[1]), .cin(carry[0]), .sum(sum[1]), .cout(carry[1]));
+    full_adder fa2 (.a(a[2]), .b(b[2]), .cin(carry[1]), .sum(sum[2]), .cout(carry[2]));
+    full_adder fa3 (.a(a[3]), .b(b[3]), .cin(carry[2]), .sum(sum[3]), .cout(carry[3]));
+
+    assign cout = carry[3];
+
+endmodule
+
+module full_adder (
+    input wire a,
+    input wire b,
+    input wire cin,
+    output wire sum,
+    output wire cout
+);
+
+    assign sum = a ^ b ^ cin;
+    assign cout = (a & b) | (cin & (a ^ b));
+
+endmodule`
+}
+
+function generate2to1Multiplexer() {
+  return `module mux_2to1 (
+    input wire select,
+    input wire data_0,
+    input wire data_1,
+    output wire data_out
+);
+
+    // When select = 0, output data_0
+    // When select = 1, output data_1
+    assign data_out = select ? data_1 : data_0;
+
+endmodule
+
+// Alternative implementation using always block
+module mux_2to1_behavioral (
+    input wire select,
+    input wire data_0,
+    input wire data_1,
+    output reg data_out
+);
+
+    always @(*) begin
+        case (select)
+            1'b0: data_out = data_0;
+            1'b1: data_out = data_1;
+            default: data_out = 1'b0;
+        endcase
+    end
+
+endmodule`
 
 function generate4BitCounter() {
   return `module counter_4bit (
