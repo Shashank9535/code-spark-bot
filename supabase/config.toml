@@ -1,1 +1,4 @@
 project_id = "qzxrsvofiyxlfvfmtqyk"
+
+[functions.generate-verilog]
+verify_jwt = false
