@@ -1,7 +1,25 @@
 
 import React, { useState } from 'react';
-import { Send, Copy, Download, Sparkles, Code2, FileText, AlertCircle } from 'lucide-react';
+import { Send, Copy, Download, Sparkles, Code2, FileText, AlertCircle, Youtube, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+interface ModuleInfo {
+  name: string;
+  prompt: string;
+  youtubeLink?: string;
+}
+
+const popularModules: ModuleInfo[] = [
+  { name: 'JK Flip-Flop', prompt: 'JK Flip-Flop with preset and clear', youtubeLink: 'https://youtu.be/775ARR6qz9U?si=RS9nXLeNBImFaKSQ' },
+  { name: 'D Flip-Flop', prompt: 'D Flip-Flop with async reset', youtubeLink: 'https://youtu.be/-PZbcaw4vfo?si=RgB-Rd9lAbqSQOHP' },
+  { name: 'T Flip-Flop', prompt: 'T Flip-Flop with toggle', youtubeLink: 'https://youtu.be/t3C5-qvHGjk?si=JWpC1W8dRqmG0q7k' },
+  { name: '4-bit Adder', prompt: '4-bit Full Adder with carry', youtubeLink: 'https://youtu.be/smotmkf9jjk?si=Ekhdam7aarK6ves-' },
+  { name: '1-bit Full Adder', prompt: '1-bit Full Adder', youtubeLink: 'https://youtu.be/bFAr1lMR7fE?si=r3OCSQ0-siRMp85x' },
+  { name: '2:1 Multiplexer', prompt: '2:1 Multiplexer with select', youtubeLink: 'https://youtu.be/vVdQVxnbPgI?si=FbUiy7dDUqoQKq7r' },
+  { name: '4:1 Multiplexer', prompt: '4:1 Multiplexer with select', youtubeLink: 'https://youtu.be/hvWzEMorRgM?si=N8KXgUPw7ja7Ays7' },
+  { name: '4-bit ALU', prompt: '4-bit ALU with operations', youtubeLink: undefined },
+  { name: '4-bit Counter', prompt: '4-bit Binary Counter with enable', youtubeLink: undefined },
+];
 
 const CodeGenerator = () => {
   const [prompt, setPrompt] = useState('');
@@ -176,28 +194,57 @@ const CodeGenerator = () => {
         </div>
       )}
 
-      {/* Example Prompts */}
+      {/* Popular Modules */}
       <div className="mt-8">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
           <FileText className="h-5 w-5 text-blue-400 mr-2" />
           Popular Modules
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            'JK Flip-Flop with preset and clear',
-            '4-bit Binary Counter with enable',
-            '8-bit Full Adder with carry',
-            '4:1 Multiplexer with select',
-            'D Flip-Flop with async reset',
-            '4-bit ALU'
-          ].map((example) => (
-            <button
-              key={example}
-              onClick={() => setPrompt(example)}
-              className="text-left bg-gray-700 hover:bg-gray-600 p-3 rounded-lg text-gray-300 hover:text-white transition-colors"
+          {popularModules.map((module) => (
+            <div
+              key={module.name}
+              className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-blue-500 transition-colors"
             >
-              {example}
-            </button>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-white font-medium">{module.name}</h4>
+                {module.youtubeLink && (
+                  <a
+                    href={module.youtubeLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-red-500 hover:text-red-400 transition-colors"
+                    title="Watch tutorial on YouTube"
+                  >
+                    <Youtube className="h-5 w-5" />
+                  </a>
+                )}
+              </div>
+              <p className="text-gray-400 text-sm mb-3">{module.prompt}</p>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    setPrompt(module.prompt);
+                    handleGenerate();
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center space-x-1"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>Generate</span>
+                </button>
+                {module.youtubeLink && (
+                  <a
+                    href={module.youtubeLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center space-x-1"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Tutorial</span>
+                  </a>
+                )}
+              </div>
+            </div>
           ))}
         </div>
       </div>
