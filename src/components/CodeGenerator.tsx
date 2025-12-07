@@ -223,11 +223,31 @@ const CodeGenerator = () => {
               <p className="text-gray-400 text-sm mb-3">{module.prompt}</p>
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setPrompt(module.prompt);
-                    handleGenerate();
+                    setIsGenerating(true);
+                    setError('');
+                    try {
+                      const { data, error: functionError } = await supabase.functions.invoke('generate-verilog', {
+                        body: { prompt: module.prompt, language }
+                      });
+                      if (functionError) {
+                        setError(`Failed to generate code: ${functionError.message}`);
+                        return;
+                      }
+                      if (data?.generatedCode) {
+                        setGeneratedCode(data.generatedCode);
+                      } else if (data?.error) {
+                        setError(data.error);
+                      }
+                    } catch (err) {
+                      setError('An unexpected error occurred.');
+                    } finally {
+                      setIsGenerating(false);
+                    }
                   }}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center space-x-1"
+                  disabled={isGenerating}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center space-x-1"
                 >
                   <Sparkles className="h-4 w-4" />
                   <span>Generate</span>
