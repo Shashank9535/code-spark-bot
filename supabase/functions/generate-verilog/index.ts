@@ -250,6 +250,7 @@ module mux_2to1_behavioral (
     end
 
 endmodule`
+}
 
 function generate4BitCounter() {
   return `module counter_4bit (
