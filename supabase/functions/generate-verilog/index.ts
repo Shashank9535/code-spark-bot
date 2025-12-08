@@ -8,125 +8,50 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  console.log('Edge function called');
+  
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    let body;
-    try {
-      body = await req.json()
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError)
-      return new Response(
-        JSON.stringify({ error: 'Invalid JSON in request body' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
-
-    const { prompt, language } = body
+    const { prompt, language } = await req.json();
+    console.log('Request received:', { prompt, language });
     
     if (!prompt) {
       return new Response(
         JSON.stringify({ error: 'Prompt is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Truncate very long prompts and log
-    const cleanPrompt = String(prompt).substring(0, 200)
-    console.log('Generating code for prompt:', cleanPrompt, 'Language:', language)
-
-    let generatedCode = ''
-
-    // Generate code based on prompt keywords - use clean truncated prompt
-    const promptLower = cleanPrompt.toLowerCase()
+    const promptLower = prompt.toLowerCase();
+    let generatedCode = '';
 
     if (language === 'verilog') {
-      if (promptLower.includes('jk flip') || promptLower.includes('jk-flip')) {
-        generatedCode = generateJKFlipFlop()
-      } else if (promptLower.includes('d flip') || promptLower.includes('d-flip')) {
-        generatedCode = generateDFlipFlop()
-      } else if (promptLower.includes('t flip') || promptLower.includes('t-flip')) {
-        generatedCode = generateTFlipFlop()
-      } else if (promptLower.includes('4-bit counter') || promptLower.includes('counter')) {
-        generatedCode = generate4BitCounter()
-      } else if (promptLower.includes('1-bit') && (promptLower.includes('adder') || promptLower.includes('full adder'))) {
-        generatedCode = generate1BitFullAdder()
-      } else if (promptLower.includes('4-bit') && (promptLower.includes('adder') || promptLower.includes('full adder'))) {
-        generatedCode = generate4BitAdder()
-      } else if (promptLower.includes('2:1') || promptLower.includes('2 to 1') || promptLower.includes('2-to-1')) {
-        generatedCode = generate2to1Multiplexer()
-      } else if (promptLower.includes('4:1') || promptLower.includes('4 to 1') || promptLower.includes('4-to-1') || promptLower.includes('multiplexer') || promptLower.includes('mux')) {
-        generatedCode = generate4to1Multiplexer()
-      } else if (promptLower.includes('alu')) {
-        generatedCode = generate4BitALU()
-      } else if (promptLower.includes('shift register')) {
-        generatedCode = generateShiftRegister()
-      } else {
-        generatedCode = generateGenericModule(prompt)
-      }
+      generatedCode = generateVerilogCode(promptLower);
     } else {
-      // VHDL generation with specific modules
-      if (promptLower.includes('jk flip') || promptLower.includes('jk-flip')) {
-        generatedCode = generateVHDLJKFlipFlop()
-      } else if (promptLower.includes('d flip') || promptLower.includes('d-flip')) {
-        generatedCode = generateVHDLDFlipFlop()
-      } else if (promptLower.includes('t flip') || promptLower.includes('t-flip')) {
-        generatedCode = generateVHDLTFlipFlop()
-      } else if (promptLower.includes('4-bit counter') || promptLower.includes('counter')) {
-        generatedCode = generateVHDL4BitCounter()
-      } else if (promptLower.includes('1-bit') && (promptLower.includes('adder') || promptLower.includes('full adder'))) {
-        generatedCode = generateVHDL1BitFullAdder()
-      } else if (promptLower.includes('4-bit') && (promptLower.includes('adder') || promptLower.includes('full adder'))) {
-        generatedCode = generateVHDL4BitAdder()
-      } else if (promptLower.includes('2:1') || promptLower.includes('2 to 1') || promptLower.includes('2-to-1')) {
-        generatedCode = generateVHDL2to1Multiplexer()
-      } else if (promptLower.includes('4:1') || promptLower.includes('4 to 1') || promptLower.includes('4-to-1') || promptLower.includes('multiplexer') || promptLower.includes('mux')) {
-        generatedCode = generateVHDL4to1Multiplexer()
-      } else if (promptLower.includes('alu')) {
-        generatedCode = generateVHDL4BitALU()
-      } else {
-        generatedCode = generateGenericVHDL(prompt)
-      }
+      generatedCode = generateVHDLCode(promptLower);
     }
 
+    console.log('Code generated successfully');
     return new Response(
-      JSON.stringify({ 
-        generatedCode: generatedCode.trim(),
-        model: 'Local Verilog Generator'
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+      JSON.stringify({ generatedCode, model: 'Local Verilog Generator' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (error) {
-    console.error('Error in generate-verilog function:', error)
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Internal server error', 
-        details: error.message 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
-})
+});
 
-// ============ VERILOG GENERATORS ============
-
-function generateJKFlipFlop() {
-  return `module jk_flip_flop (
+function generateVerilogCode(prompt: string): string {
+  if (prompt.includes('jk flip') || prompt.includes('jk-flip')) {
+    return `module jk_flip_flop (
     input wire clk,
     input wire reset,
     input wire preset,
@@ -135,7 +60,6 @@ function generateJKFlipFlop() {
     output reg q,
     output wire q_bar
 );
-
     assign q_bar = ~q;
 
     always @(posedge clk or posedge reset or posedge preset) begin
@@ -152,7 +76,6 @@ function generateJKFlipFlop() {
             endcase
         end
     end
-
 endmodule
 
 // Testbench
@@ -168,16 +91,16 @@ module jk_flip_flop_tb;
     initial begin
         reset = 1; preset = 0; j = 0; k = 0; #10;
         reset = 0; #10;
-        j = 1; k = 0; #10; // Set
-        j = 0; k = 1; #10; // Reset
-        j = 1; k = 1; #20; // Toggle
+        j = 1; k = 0; #10;
+        j = 0; k = 1; #10;
+        j = 1; k = 1; #20;
         $finish;
     end
-endmodule`
-}
-
-function generateDFlipFlop() {
-  return `module d_flip_flop (
+endmodule`;
+  }
+  
+  if (prompt.includes('d flip') || prompt.includes('d-flip')) {
+    return `module d_flip_flop (
     input wire clk,
     input wire reset,
     input wire enable,
@@ -185,7 +108,6 @@ function generateDFlipFlop() {
     output reg q,
     output wire q_bar
 );
-
     assign q_bar = ~q;
 
     always @(posedge clk or posedge reset) begin
@@ -194,7 +116,6 @@ function generateDFlipFlop() {
         else if (enable)
             q <= d;
     end
-
 endmodule
 
 // Testbench
@@ -212,30 +133,27 @@ module d_flip_flop_tb;
         reset = 0; enable = 1; #10;
         d = 1; #10;
         d = 0; #10;
-        d = 1; #10;
         $finish;
     end
-endmodule`
-}
-
-function generateTFlipFlop() {
-  return `module t_flip_flop (
+endmodule`;
+  }
+  
+  if (prompt.includes('t flip') || prompt.includes('t-flip')) {
+    return `module t_flip_flop (
     input wire clk,
     input wire reset,
     input wire t,
     output reg q,
     output wire q_bar
 );
-
     assign q_bar = ~q;
 
     always @(posedge clk or posedge reset) begin
         if (reset)
             q <= 1'b0;
         else if (t)
-            q <= ~q;  // Toggle when T is high
+            q <= ~q;
     end
-
 endmodule
 
 // Testbench
@@ -250,27 +168,22 @@ module t_flip_flop_tb;
     
     initial begin
         reset = 1; t = 0; #10;
-        reset = 0; t = 1; #50; // Toggle multiple times
+        reset = 0; t = 1; #50;
         $finish;
     end
-endmodule`
-}
-
-function generate1BitFullAdder() {
-  return `module full_adder_1bit (
+endmodule`;
+  }
+  
+  if (prompt.includes('1-bit') && prompt.includes('adder')) {
+    return `module full_adder_1bit (
     input wire a,
     input wire b,
     input wire cin,
     output wire sum,
     output wire cout
 );
-
-    // Sum = A XOR B XOR Cin
     assign sum = a ^ b ^ cin;
-    
-    // Carry = (A AND B) OR (Cin AND (A XOR B))
     assign cout = (a & b) | (cin & (a ^ b));
-
 endmodule
 
 // Testbench
@@ -291,38 +204,31 @@ module full_adder_1bit_tb;
         {a, b, cin} = 3'b111; #10;
         $finish;
     end
-endmodule`
-}
+endmodule`;
+  }
+  
+  if (prompt.includes('4-bit') && prompt.includes('adder')) {
+    return `module full_adder (
+    input wire a, b, cin,
+    output wire sum, cout
+);
+    assign sum = a ^ b ^ cin;
+    assign cout = (a & b) | (cin & (a ^ b));
+endmodule
 
-function generate4BitAdder() {
-  return `module adder_4bit (
+module adder_4bit (
     input wire [3:0] a,
     input wire [3:0] b,
     input wire cin,
     output wire [3:0] sum,
     output wire cout
 );
-
     wire [3:0] carry;
 
     full_adder fa0 (.a(a[0]), .b(b[0]), .cin(cin), .sum(sum[0]), .cout(carry[0]));
     full_adder fa1 (.a(a[1]), .b(b[1]), .cin(carry[0]), .sum(sum[1]), .cout(carry[1]));
     full_adder fa2 (.a(a[2]), .b(b[2]), .cin(carry[1]), .sum(sum[2]), .cout(carry[2]));
-    full_adder fa3 (.a(a[3]), .b(b[3]), .cin(carry[2]), .sum(sum[3]), .cout(carry[3]));
-
-    assign cout = carry[3];
-
-endmodule
-
-module full_adder (
-    input wire a,
-    input wire b,
-    input wire cin,
-    output wire sum,
-    output wire cout
-);
-    assign sum = a ^ b ^ cin;
-    assign cout = (a & b) | (cin & (a ^ b));
+    full_adder fa3 (.a(a[3]), .b(b[3]), .cin(carry[2]), .sum(sum[3]), .cout(cout));
 endmodule
 
 // Testbench
@@ -340,39 +246,17 @@ module adder_4bit_tb;
         a = 4'b1010; b = 4'b0101; cin = 1; #10;
         $finish;
     end
-endmodule`
-}
-
-function generate2to1Multiplexer() {
-  return `module mux_2to1 (
+endmodule`;
+  }
+  
+  if (prompt.includes('2:1') || prompt.includes('2 to 1') || prompt.includes('2-to-1')) {
+    return `module mux_2to1 (
     input wire sel,
     input wire in0,
     input wire in1,
     output wire out
 );
-
-    // When sel = 0, output in0
-    // When sel = 1, output in1
     assign out = sel ? in1 : in0;
-
-endmodule
-
-// Behavioral implementation
-module mux_2to1_behavioral (
-    input wire sel,
-    input wire in0,
-    input wire in1,
-    output reg out
-);
-
-    always @(*) begin
-        case (sel)
-            1'b0: out = in0;
-            1'b1: out = in1;
-            default: out = 1'b0;
-        endcase
-    end
-
 endmodule
 
 // Testbench
@@ -389,16 +273,15 @@ module mux_2to1_tb;
         sel = 1; in0 = 1; in1 = 0; #10;
         $finish;
     end
-endmodule`
-}
-
-function generate4to1Multiplexer() {
-  return `module mux_4to1 (
+endmodule`;
+  }
+  
+  if (prompt.includes('4:1') || prompt.includes('4 to 1') || prompt.includes('4-to-1') || prompt.includes('multiplexer') || prompt.includes('mux')) {
+    return `module mux_4to1 (
     input wire [1:0] sel,
     input wire [3:0] in,
     output reg out
 );
-
     always @(*) begin
         case (sel)
             2'b00: out = in[0];
@@ -408,7 +291,6 @@ function generate4to1Multiplexer() {
             default: out = 1'b0;
         endcase
     end
-
 endmodule
 
 // Testbench
@@ -427,18 +309,17 @@ module mux_4to1_tb;
         sel = 2'b11; #10;
         $finish;
     end
-endmodule`
-}
-
-function generate4BitCounter() {
-  return `module counter_4bit (
+endmodule`;
+  }
+  
+  if (prompt.includes('counter')) {
+    return `module counter_4bit (
     input wire clk,
     input wire reset,
     input wire enable,
     output reg [3:0] count,
     output wire overflow
 );
-
     assign overflow = (count == 4'b1111) && enable;
 
     always @(posedge clk or posedge reset) begin
@@ -447,7 +328,6 @@ function generate4BitCounter() {
         else if (enable)
             count <= count + 1;
     end
-
 endmodule
 
 // Testbench
@@ -466,11 +346,11 @@ module counter_4bit_tb;
         reset = 0; enable = 1; #200;
         $finish;
     end
-endmodule`
-}
-
-function generate4BitALU() {
-  return `module alu_4bit (
+endmodule`;
+  }
+  
+  if (prompt.includes('alu')) {
+    return `module alu_4bit (
     input wire [3:0] a,
     input wire [3:0] b,
     input wire [2:0] op,
@@ -478,23 +358,21 @@ function generate4BitALU() {
     output reg zero,
     output reg carry
 );
-
     always @(*) begin
         carry = 1'b0;
         case (op)
-            3'b000: result = a + b;                    // ADD
-            3'b001: {carry, result} = a + b;           // ADD with carry
-            3'b010: result = a - b;                    // SUB
-            3'b011: result = a & b;                    // AND
-            3'b100: result = a | b;                    // OR
-            3'b101: result = a ^ b;                    // XOR
-            3'b110: result = ~a;                       // NOT
-            3'b111: result = a << 1;                   // Left shift
+            3'b000: result = a + b;           // ADD
+            3'b001: {carry, result} = a + b;  // ADD with carry
+            3'b010: result = a - b;           // SUB
+            3'b011: result = a & b;           // AND
+            3'b100: result = a | b;           // OR
+            3'b101: result = a ^ b;           // XOR
+            3'b110: result = ~a;              // NOT
+            3'b111: result = a << 1;          // Left shift
             default: result = 4'b0000;
         endcase
         zero = (result == 4'b0000);
     end
-
 endmodule
 
 // Testbench
@@ -508,66 +386,35 @@ module alu_4bit_tb;
     
     initial begin
         a = 4'b0101; b = 4'b0011;
-        op = 3'b000; #10; // ADD
-        op = 3'b010; #10; // SUB
-        op = 3'b011; #10; // AND
-        op = 3'b100; #10; // OR
+        op = 3'b000; #10;
+        op = 3'b010; #10;
+        op = 3'b011; #10;
+        op = 3'b100; #10;
         $finish;
     end
-endmodule`
-}
-
-function generateShiftRegister() {
-  return `module shift_register_4bit (
-    input wire clk,
-    input wire reset,
-    input wire shift_en,
-    input wire serial_in,
-    input wire dir,  // 0 = left, 1 = right
-    output reg [3:0] parallel_out,
-    output wire serial_out
-);
-
-    assign serial_out = dir ? parallel_out[0] : parallel_out[3];
-
-    always @(posedge clk or posedge reset) begin
-        if (reset)
-            parallel_out <= 4'b0000;
-        else if (shift_en) begin
-            if (dir)
-                parallel_out <= {serial_in, parallel_out[3:1]};
-            else
-                parallel_out <= {parallel_out[2:0], serial_in};
-        end
-    end
-
-endmodule`
-}
-
-function generateGenericModule(prompt: string) {
-  const moduleName = prompt.toLowerCase().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')
+endmodule`;
+  }
   
+  // Generic module
+  const moduleName = prompt.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
   return `module ${moduleName} (
     input wire clk,
     input wire reset,
     input wire [7:0] data_in,
     output reg [7:0] data_out
 );
-
     always @(posedge clk or posedge reset) begin
         if (reset)
             data_out <= 8'b0;
         else
             data_out <= data_in;
     end
-
-endmodule`
+endmodule`;
 }
 
-// ============ VHDL GENERATORS ============
-
-function generateVHDLJKFlipFlop() {
-  return `library IEEE;
+function generateVHDLCode(prompt: string): string {
+  if (prompt.includes('jk flip') || prompt.includes('jk-flip')) {
+    return `library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity jk_flip_flop is
@@ -595,20 +442,22 @@ begin
         elsif preset = '1' then
             q_int <= '1';
         elsif rising_edge(clk) then
-            case std_logic_vector'(j & k) is
-                when "00" => q_int <= q_int;      -- Hold
-                when "01" => q_int <= '0';        -- Reset
-                when "10" => q_int <= '1';        -- Set
-                when "11" => q_int <= not q_int;  -- Toggle
-                when others => q_int <= q_int;
-            end case;
+            if j = '0' and k = '0' then
+                q_int <= q_int;
+            elsif j = '0' and k = '1' then
+                q_int <= '0';
+            elsif j = '1' and k = '0' then
+                q_int <= '1';
+            else
+                q_int <= not q_int;
+            end if;
         end if;
     end process;
-end Behavioral;`
-}
-
-function generateVHDLDFlipFlop() {
-  return `library IEEE;
+end Behavioral;`;
+  }
+  
+  if (prompt.includes('d flip') || prompt.includes('d-flip')) {
+    return `library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity d_flip_flop is
@@ -638,11 +487,11 @@ begin
             end if;
         end if;
     end process;
-end Behavioral;`
-}
-
-function generateVHDLTFlipFlop() {
-  return `library IEEE;
+end Behavioral;`;
+  }
+  
+  if (prompt.includes('t flip') || prompt.includes('t-flip')) {
+    return `library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity t_flip_flop is
@@ -671,11 +520,11 @@ begin
             end if;
         end if;
     end process;
-end Behavioral;`
-}
-
-function generateVHDL1BitFullAdder() {
-  return `library IEEE;
+end Behavioral;`;
+  }
+  
+  if (prompt.includes('1-bit') && prompt.includes('adder')) {
+    return `library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity full_adder_1bit is
@@ -692,12 +541,13 @@ architecture Behavioral of full_adder_1bit is
 begin
     sum <= a xor b xor cin;
     cout <= (a and b) or (cin and (a xor b));
-end Behavioral;`
-}
-
-function generateVHDL4BitAdder() {
-  return `library IEEE;
+end Behavioral;`;
+  }
+  
+  if (prompt.includes('4-bit') && prompt.includes('adder')) {
+    return `library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 entity adder_4bit is
     Port (
@@ -710,21 +560,16 @@ entity adder_4bit is
 end adder_4bit;
 
 architecture Behavioral of adder_4bit is
-    signal carry : STD_LOGIC_VECTOR(4 downto 0);
+    signal result : STD_LOGIC_VECTOR(4 downto 0);
 begin
-    carry(0) <= cin;
-    
-    GEN_ADDER: for i in 0 to 3 generate
-        sum(i) <= a(i) xor b(i) xor carry(i);
-        carry(i+1) <= (a(i) and b(i)) or (carry(i) and (a(i) xor b(i)));
-    end generate;
-    
-    cout <= carry(4);
-end Behavioral;`
-}
-
-function generateVHDL2to1Multiplexer() {
-  return `library IEEE;
+    result <= std_logic_vector(unsigned('0' & a) + unsigned('0' & b) + unsigned'("" & cin));
+    sum <= result(3 downto 0);
+    cout <= result(4);
+end Behavioral;`;
+  }
+  
+  if (prompt.includes('2:1') || prompt.includes('2 to 1') || prompt.includes('2-to-1')) {
+    return `library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity mux_2to1 is
@@ -732,25 +577,18 @@ entity mux_2to1 is
         sel : in STD_LOGIC;
         in0 : in STD_LOGIC;
         in1 : in STD_LOGIC;
-        output_sig : out STD_LOGIC
+        output_signal : out STD_LOGIC
     );
 end mux_2to1;
 
 architecture Behavioral of mux_2to1 is
 begin
-    process(sel, in0, in1)
-    begin
-        case sel is
-            when '0' => output_sig <= in0;
-            when '1' => output_sig <= in1;
-            when others => output_sig <= '0';
-        end case;
-    end process;
-end Behavioral;`
-}
-
-function generateVHDL4to1Multiplexer() {
-  return `library IEEE;
+    output_signal <= in1 when sel = '1' else in0;
+end Behavioral;`;
+  }
+  
+  if (prompt.includes('4:1') || prompt.includes('4 to 1') || prompt.includes('4-to-1') || prompt.includes('multiplexer') || prompt.includes('mux')) {
+    return `library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity mux_4to1 is
@@ -760,7 +598,7 @@ entity mux_4to1 is
         in1 : in STD_LOGIC;
         in2 : in STD_LOGIC;
         in3 : in STD_LOGIC;
-        output_sig : out STD_LOGIC
+        output_signal : out STD_LOGIC
     );
 end mux_4to1;
 
@@ -769,18 +607,18 @@ begin
     process(sel, in0, in1, in2, in3)
     begin
         case sel is
-            when "00" => output_sig <= in0;
-            when "01" => output_sig <= in1;
-            when "10" => output_sig <= in2;
-            when "11" => output_sig <= in3;
-            when others => output_sig <= '0';
+            when "00" => output_signal <= in0;
+            when "01" => output_signal <= in1;
+            when "10" => output_signal <= in2;
+            when "11" => output_signal <= in3;
+            when others => output_signal <= '0';
         end case;
     end process;
-end Behavioral;`
-}
-
-function generateVHDL4BitCounter() {
-  return `library IEEE;
+end Behavioral;`;
+  }
+  
+  if (prompt.includes('counter')) {
+    return `library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
@@ -795,7 +633,7 @@ entity counter_4bit is
 end counter_4bit;
 
 architecture Behavioral of counter_4bit is
-    signal count_int : unsigned(3 downto 0) := (others => '0');
+    signal count_int : unsigned(3 downto 0) := "0000";
 begin
     count <= std_logic_vector(count_int);
     overflow <= '1' when count_int = "1111" and enable = '1' else '0';
@@ -803,18 +641,18 @@ begin
     process(clk, reset)
     begin
         if reset = '1' then
-            count_int <= (others => '0');
+            count_int <= "0000";
         elsif rising_edge(clk) then
             if enable = '1' then
                 count_int <= count_int + 1;
             end if;
         end if;
     end process;
-end Behavioral;`
-}
-
-function generateVHDL4BitALU() {
-  return `library IEEE;
+end Behavioral;`;
+  }
+  
+  if (prompt.includes('alu')) {
+    return `library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
@@ -831,7 +669,6 @@ end alu_4bit;
 
 architecture Behavioral of alu_4bit is
     signal result_int : STD_LOGIC_VECTOR(3 downto 0);
-    signal temp : STD_LOGIC_VECTOR(4 downto 0);
 begin
     result <= result_int;
     zero <= '1' when result_int = "0000" else '0';
@@ -840,37 +677,23 @@ begin
     begin
         carry <= '0';
         case op is
-            when "000" =>  -- ADD
-                result_int <= std_logic_vector(unsigned(a) + unsigned(b));
-            when "001" =>  -- ADD with carry
-                temp <= std_logic_vector(('0' & unsigned(a)) + ('0' & unsigned(b)));
-                result_int <= temp(3 downto 0);
-                carry <= temp(4);
-            when "010" =>  -- SUB
-                result_int <= std_logic_vector(unsigned(a) - unsigned(b));
-            when "011" =>  -- AND
-                result_int <= a and b;
-            when "100" =>  -- OR
-                result_int <= a or b;
-            when "101" =>  -- XOR
-                result_int <= a xor b;
-            when "110" =>  -- NOT
-                result_int <= not a;
-            when "111" =>  -- Left shift
-                result_int <= a(2 downto 0) & '0';
-            when others =>
-                result_int <= "0000";
+            when "000" => result_int <= std_logic_vector(unsigned(a) + unsigned(b));
+            when "010" => result_int <= std_logic_vector(unsigned(a) - unsigned(b));
+            when "011" => result_int <= a and b;
+            when "100" => result_int <= a or b;
+            when "101" => result_int <= a xor b;
+            when "110" => result_int <= not a;
+            when "111" => result_int <= a(2 downto 0) & '0';
+            when others => result_int <= "0000";
         end case;
     end process;
-end Behavioral;`
-}
-
-function generateGenericVHDL(prompt: string) {
-  const entityName = prompt.toLowerCase().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')
+end Behavioral;`;
+  }
   
+  // Generic VHDL
+  const entityName = prompt.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
   return `library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
 
 entity ${entityName} is
     Port (
@@ -891,5 +714,5 @@ begin
             data_out <= data_in;
         end if;
     end process;
-end Behavioral;`
+end Behavioral;`;
 }
