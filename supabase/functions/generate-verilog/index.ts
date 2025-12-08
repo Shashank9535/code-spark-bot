@@ -13,7 +13,21 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, language } = await req.json()
+    let body;
+    try {
+      body = await req.json()
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError)
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    const { prompt, language } = body
     
     if (!prompt) {
       return new Response(
@@ -25,12 +39,14 @@ serve(async (req) => {
       )
     }
 
-    console.log('Generating code for prompt:', prompt, 'Language:', language)
+    // Truncate very long prompts and log
+    const cleanPrompt = String(prompt).substring(0, 200)
+    console.log('Generating code for prompt:', cleanPrompt, 'Language:', language)
 
     let generatedCode = ''
 
-    // Generate code based on prompt keywords
-    const promptLower = prompt.toLowerCase()
+    // Generate code based on prompt keywords - use clean truncated prompt
+    const promptLower = cleanPrompt.toLowerCase()
 
     if (language === 'verilog') {
       if (promptLower.includes('jk flip') || promptLower.includes('jk-flip')) {
