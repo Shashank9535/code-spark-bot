@@ -124,19 +124,34 @@ function simulateVerilogCode(prompt: string, code: string): SimulationResult {
   let output = '';
   let waveform: { signal: Signal[] } = { signal: [] };
 
-  // Basic syntax validation
-  const hasModule = code.includes('module ');
-  const hasEndmodule = code.includes('endmodule');
+  // Detect if it's VHDL or Verilog code
+  const isVHDL = code.toLowerCase().includes('entity ') || code.toLowerCase().includes('architecture ');
   
-  if (!hasModule) {
-    errors.push("Error: Missing 'module' declaration");
-  }
-  if (!hasEndmodule) {
-    errors.push("Error: Missing 'endmodule' statement");
+  // Basic syntax validation based on language
+  if (isVHDL) {
+    const hasEntity = code.toLowerCase().includes('entity ');
+    const hasArchitecture = code.toLowerCase().includes('architecture ');
+    
+    if (!hasEntity) {
+      errors.push("Error: Missing 'entity' declaration");
+    }
+    if (!hasArchitecture) {
+      errors.push("Error: Missing 'architecture' declaration");
+    }
+  } else {
+    const hasModule = code.includes('module ');
+    const hasEndmodule = code.includes('endmodule');
+    
+    if (!hasModule) {
+      errors.push("Error: Missing 'module' declaration");
+    }
+    if (!hasEndmodule) {
+      errors.push("Error: Missing 'endmodule' statement");
+    }
   }
 
-  // Check for common issues
-  if (code.includes('always @(') && !code.includes('begin')) {
+  // Check for common issues in Verilog
+  if (!isVHDL && code.includes('always @(') && !code.includes('begin')) {
     warnings.push("Warning: Consider using begin/end blocks in always statements");
   }
 
