@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Send, Copy, Download, Sparkles, Code2, FileText, AlertCircle, Youtube, ExternalLink, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import WaveformViewer from './WaveformViewer';
+import VerilogChatbot from './VerilogChatbot';
 
 interface ModuleInfo {
   name: string;
@@ -112,6 +113,9 @@ const CodeGenerator = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* AI Chatbot */}
+      <VerilogChatbot />
+      
       {/* Input Section */}
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-6 mb-8 border border-gray-700">
         <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
