@@ -1,12 +1,27 @@
-
 import React, { useState } from 'react';
-import { Send, Copy, Download, Sparkles, Code2, FileText, AlertCircle, Youtube, ExternalLink } from 'lucide-react';
+import { Send, Copy, Download, Sparkles, Code2, FileText, AlertCircle, Youtube, ExternalLink, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import WaveformViewer from './WaveformViewer';
 
 interface ModuleInfo {
   name: string;
   prompt: string;
   youtubeLink?: string;
+}
+
+interface SimulationResult {
+  success: boolean;
+  output: string;
+  errors: string[];
+  warnings: string[];
+  waveform: {
+    signal: Array<{
+      name: string;
+      wave: string;
+      data?: string[];
+    }>;
+  };
+  timing: string;
 }
 
 const popularModules: ModuleInfo[] = [
@@ -26,36 +41,48 @@ const CodeGenerator = () => {
   const [generatedCode, setGeneratedCode] = useState('');
   const [language, setLanguage] = useState('verilog');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
   const [error, setError] = useState('');
+  const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
 
-  const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+  const handleGenerate = async (customPrompt?: string) => {
+    const currentPrompt = customPrompt || prompt;
+    if (!currentPrompt.trim()) return;
     
     setIsGenerating(true);
+    setIsSimulating(true);
     setError('');
+    setSimulationResult(null);
     
     try {
-      console.log('Calling generate-verilog function with:', { prompt, language });
+      console.log('Calling generate-verilog function with:', { prompt: currentPrompt, language });
       
       const { data, error: functionError } = await supabase.functions.invoke('generate-verilog', {
-        body: { prompt, language }
+        body: { prompt: currentPrompt, language, simulate: true }
       });
 
       if (functionError) {
         console.error('Function error:', functionError);
         setError(`Failed to generate code: ${functionError.message}`);
+        setIsSimulating(false);
         return;
       }
 
       if (data?.error) {
         console.error('API error:', data.error);
         setError(data.error);
+        setIsSimulating(false);
         return;
       }
 
       if (data?.generatedCode) {
         setGeneratedCode(data.generatedCode);
         console.log('Generated code successfully');
+        
+        // Set simulation result
+        if (data?.simulation) {
+          setSimulationResult(data.simulation);
+        }
       } else {
         setError('No code was generated. Please try a different prompt.');
       }
@@ -65,6 +92,7 @@ const CodeGenerator = () => {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsGenerating(false);
+      setIsSimulating(false);
     }
   };
 
@@ -83,15 +111,15 @@ const CodeGenerator = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Input Section */}
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-6 mb-8 border border-gray-700">
         <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
           <Sparkles className="h-6 w-6 text-blue-400 mr-2" />
-          Professional Verilog Generator
+          Verilog CodeBot - Generate & Simulate
         </h2>
         <p className="text-gray-300 mb-4 text-sm">
-          Generate professional-grade Verilog and VHDL code with built-in templates
+          Generate professional-grade Verilog/VHDL code with instant simulation and waveform visualization
         </p>
         
         <div className="space-y-4">
@@ -130,16 +158,18 @@ const CodeGenerator = () => {
               onKeyPress={(e) => e.key === 'Enter' && handleGenerate()}
             />
             <button
-              onClick={handleGenerate}
+              onClick={() => handleGenerate()}
               disabled={isGenerating || !prompt.trim()}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors flex items-center space-x-2"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-600 text-white px-6 py-3 rounded-lg transition-all flex items-center space-x-2"
             >
               {isGenerating ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
               ) : (
-                <Send className="h-4 w-4" />
+                <>
+                  <Play className="h-4 w-4" />
+                  <span>Generate & Simulate</span>
+                </>
               )}
-              <span>{isGenerating ? 'Generating...' : 'Generate'}</span>
             </button>
           </div>
 
@@ -156,49 +186,65 @@ const CodeGenerator = () => {
         </div>
       </div>
 
-      {/* Output Section */}
-      {generatedCode && (
-        <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      {/* Split View: Code and Simulation Output */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Code Section */}
+        <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden min-h-[500px] flex flex-col">
           <div className="flex items-center justify-between bg-gray-900 px-6 py-4 border-b border-gray-700">
             <div className="flex items-center space-x-2">
               <Code2 className="h-5 w-5 text-blue-400" />
               <span className="text-white font-medium">
                 Generated {language.toUpperCase()} Code
               </span>
-              <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded">
-                Local Generator
-              </span>
             </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={copyToClipboard}
-                className="p-2 text-gray-400 hover:text-blue-400 transition-colors"
-                title="Copy to clipboard"
-              >
-                <Copy className="h-4 w-4" />
-              </button>
-              <button
-                onClick={downloadCode}
-                className="p-2 text-gray-400 hover:text-blue-400 transition-colors"
-                title="Download file"
-              >
-                <Download className="h-4 w-4" />
-              </button>
-            </div>
+            {generatedCode && (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={copyToClipboard}
+                  className="p-2 text-gray-400 hover:text-blue-400 transition-colors"
+                  title="Copy to clipboard"
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={downloadCode}
+                  className="p-2 text-gray-400 hover:text-blue-400 transition-colors"
+                  title="Download file"
+                >
+                  <Download className="h-4 w-4" />
+                </button>
+              </div>
+            )}
           </div>
-          <div className="p-6">
-            <pre className="text-green-400 text-sm overflow-x-auto">
-              <code>{generatedCode}</code>
-            </pre>
+          <div className="flex-1 p-6 overflow-auto">
+            {generatedCode ? (
+              <pre className="text-green-400 text-sm font-mono">
+                <code>{generatedCode}</code>
+              </pre>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500">
+                <div className="text-center">
+                  <Code2 className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg">No Code Yet</p>
+                  <p className="text-sm mt-2">Enter a prompt and click Generate</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Simulation Output Section */}
+        <WaveformViewer 
+          simulationResult={simulationResult} 
+          isSimulating={isSimulating}
+        />
+      </div>
 
       {/* Popular Modules */}
       <div className="mt-8">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
           <FileText className="h-5 w-5 text-blue-400 mr-2" />
-          Popular Modules
+          Popular Modules - Quick Generate
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {popularModules.map((module) => (
@@ -223,34 +269,15 @@ const CodeGenerator = () => {
               <p className="text-gray-400 text-sm mb-3">{module.prompt}</p>
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={async () => {
+                  onClick={() => {
                     setPrompt(module.prompt);
-                    setIsGenerating(true);
-                    setError('');
-                    try {
-                      const { data, error: functionError } = await supabase.functions.invoke('generate-verilog', {
-                        body: { prompt: module.prompt, language }
-                      });
-                      if (functionError) {
-                        setError(`Failed to generate code: ${functionError.message}`);
-                        return;
-                      }
-                      if (data?.generatedCode) {
-                        setGeneratedCode(data.generatedCode);
-                      } else if (data?.error) {
-                        setError(data.error);
-                      }
-                    } catch (err) {
-                      setError('An unexpected error occurred.');
-                    } finally {
-                      setIsGenerating(false);
-                    }
+                    handleGenerate(module.prompt);
                   }}
                   disabled={isGenerating}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center space-x-1"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-600 text-white px-3 py-2 rounded-lg text-sm transition-all flex items-center justify-center space-x-1"
                 >
-                  <Sparkles className="h-4 w-4" />
-                  <span>Generate</span>
+                  <Play className="h-4 w-4" />
+                  <span>Generate & Simulate</span>
                 </button>
                 {module.youtubeLink && (
                   <a
