@@ -42,25 +42,70 @@ serve(async (req) => {
       );
     }
 
-    const promptLower = prompt.toLowerCase();
+    const apiKey = Deno.env.get('OPENROUTER_API_KEY');
     let generatedCode = '';
     let simulation: SimulationResult | null = null;
+    const promptLower = prompt.toLowerCase();
 
-    if (language === 'verilog') {
-      generatedCode = generateVerilogCode(promptLower);
-      if (simulate) {
-        simulation = simulateVerilogCode(promptLower, generatedCode);
+    // Try AI generation first if API key is available
+    if (apiKey) {
+      try {
+        console.log('Using OpenRouter API for code generation');
+        const systemPrompt = language === 'verilog' 
+          ? `You are a Verilog expert. Generate professional Verilog code with testbenches. Include $dumpfile and $dumpvars in testbenches. Return ONLY the code without explanations.`
+          : `You are a VHDL expert. Generate professional VHDL code with testbenches. Return ONLY the code without explanations.`;
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://verilogcodebot.vercel.app',
+            'X-Title': 'VerilogCodeBot',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.0-flash-exp:free',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: `Generate ${language.toUpperCase()} code for: ${prompt}. Include a complete testbench.` }
+            ],
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          generatedCode = data.choices[0].message.content || '';
+          // Clean up the code - remove markdown blocks
+          generatedCode = generatedCode.replace(/```verilog\n?/gi, '').replace(/```vhdl\n?/gi, '').replace(/```\n?/g, '').trim();
+          console.log('AI generated code successfully');
+        }
+      } catch (aiError) {
+        console.error('AI generation failed, falling back to templates:', aiError);
       }
-    } else {
-      generatedCode = generateVHDLCode(promptLower);
-      if (simulate) {
+    }
+
+    // Fallback to templates if AI failed or no API key
+    if (!generatedCode) {
+      console.log('Using template-based generation');
+      if (language === 'verilog') {
+        generatedCode = generateVerilogCode(promptLower);
+      } else {
+        generatedCode = generateVHDLCode(promptLower);
+      }
+    }
+
+    // Generate simulation
+    if (simulate) {
+      if (language === 'verilog') {
+        simulation = simulateVerilogCode(promptLower, generatedCode);
+      } else {
         simulation = simulateVHDLCode(promptLower, generatedCode);
       }
     }
 
     console.log('Code generated successfully');
     return new Response(
-      JSON.stringify({ generatedCode, model: 'Verilog CodeBot', simulation }),
+      JSON.stringify({ generatedCode, model: 'VerilogCodeBot AI', simulation }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
