@@ -299,6 +299,91 @@ const CodeGenerator = () => {
           ))}
         </div>
       </div>
+
+      {/* Resources Section */}
+      <div className="mt-8 bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <ExternalLink className="h-5 w-5 text-green-400 mr-2" />
+          Verilog/VHDL Resources & Tools
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <a
+            href="https://www.edaplayground.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-green-500 transition-colors group"
+          >
+            <h4 className="text-white font-medium group-hover:text-green-400 transition-colors">EDA Playground</h4>
+            <p className="text-gray-400 text-sm mt-1">Free online Verilog/VHDL simulator</p>
+          </a>
+          <a
+            href="https://hdlbits.01xz.net/wiki/Main_Page"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-green-500 transition-colors group"
+          >
+            <h4 className="text-white font-medium group-hover:text-green-400 transition-colors">HDLBits</h4>
+            <p className="text-gray-400 text-sm mt-1">Practice Verilog problems online</p>
+          </a>
+          <a
+            href="https://www.chipverify.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-green-500 transition-colors group"
+          >
+            <h4 className="text-white font-medium group-hover:text-green-400 transition-colors">ChipVerify</h4>
+            <p className="text-gray-400 text-sm mt-1">Verilog tutorials & examples</p>
+          </a>
+          <a
+            href="https://github.com/steveicarus/iverilog"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-green-500 transition-colors group"
+          >
+            <h4 className="text-white font-medium group-hover:text-green-400 transition-colors">Icarus Verilog</h4>
+            <p className="text-gray-400 text-sm mt-1">Open-source Verilog compiler</p>
+          </a>
+          <a
+            href="https://www.youtube.com/playlist?list=PLBlnK6fEyqRjMH3G6vgRqMbPd9S1n9fXg"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-red-500 transition-colors group flex items-start"
+          >
+            <Youtube className="h-5 w-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-white font-medium group-hover:text-red-400 transition-colors">Verilog Playlist</h4>
+              <p className="text-gray-400 text-sm mt-1">Complete YouTube course</p>
+            </div>
+          </a>
+          <a
+            href="https://verificationguide.com/verilog/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-green-500 transition-colors group"
+          >
+            <h4 className="text-white font-medium group-hover:text-green-400 transition-colors">Verification Guide</h4>
+            <p className="text-gray-400 text-sm mt-1">Verilog & SystemVerilog tutorials</p>
+          </a>
+          <a
+            href="https://www.asic-world.com/verilog/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-green-500 transition-colors group"
+          >
+            <h4 className="text-white font-medium group-hover:text-green-400 transition-colors">ASIC World</h4>
+            <p className="text-gray-400 text-sm mt-1">Verilog reference & examples</p>
+          </a>
+          <a
+            href="https://nandland.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-green-500 transition-colors group"
+          >
+            <h4 className="text-white font-medium group-hover:text-green-400 transition-colors">Nandland</h4>
+            <p className="text-gray-400 text-sm mt-1">FPGA tutorials & projects</p>
+          </a>
+        </div>
+      </div>
     </div>
   );
 };
