@@ -2,3 +2,6 @@ project_id = "imwnuuxmbkqorbccqebf"
 
 [functions.generate-verilog]
 verify_jwt = false
+
+[functions.verilog-chat]
+verify_jwt = false
